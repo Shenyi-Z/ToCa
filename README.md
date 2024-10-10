@@ -1,7 +1,7 @@
 # *ToCa*: Accelerating Diffusion Transformers with *To*ken-wise Feature *Ca*ching
 
 <div align="center">
-<a href="https://arxiv.org/abs/xxxx.xxxxx"><img src="https://img.shields.io/static/v1?label=Paper&message=Arxiv:ToCa&color=red&logo=arxiv">
+<a href="https://arxiv.org/abs/2410.05317"><img src="https://img.shields.io/static/v1?label=Paper&message=Arxiv:ToCa&color=red&logo=arxiv">
 </a> &ensp;
 <a href="https://toca2024.github.io/ToCa/"><img src="https://img.shields.io/static/v1?label=Project%20Page&message=Github&color=blue&logo=github-pages"></a> &ensp;
 </div>
