@@ -98,13 +98,20 @@ torchrun --nproc_per_node=6 scripts/inference_ddp.py --model_path /root/autodl-t
 sample video for **visualizaiton**
 
 ```bash
+cd Open-Sora
 python scripts/inference.py configs/opensora-v1-2/inference/sample.py   --num-frames 2s --resolution 480p --aspect-ratio 9:16   --prompt "a beautiful waterfall"
 ```
 
 sample video for **VBench evaluation**
 
 ```bash
+cd Open-Sora
 bash eval/vbench/launch.sh /root/autodl-tmp/pretrained_models/hpcai-tech/OpenSora-STDiT-v3/model.safetensors 51 opensora-ToCa 480p 9:16
 ```
 
 ( remember replacing  "/root/autodl-tmp/pretrained_models/hpcai-tech/OpenSora-STDiT-v3/model.safetensors" with your own path!)
+
+## Acknowledgements
+- Thanks to [DiT](https://github.com/facebookresearch/DiT) for their great work and codebase upon which we build DiT-ToCa.
+- Thanks to [PixArt-alpha](https://github.com/PixArt-alpha/PixArt-alpha) for their great work and codebase upon which we build PixArt-alpha-ToCa.
+- Thanks to [OpenSora](https://github.com/hpcaitech/Open-Sora) for their great work and codebase upon which we build OpenSora-ToCa.
