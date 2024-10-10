@@ -2,7 +2,7 @@ import torch
 from tqdm import tqdm
 
 from opensora.registry import SCHEDULERS
-from calflops import calculate_flops
+
 from .rectified_flow import RFlowScheduler, timestep_transform
 from ...models.cache_functions import cache_init
 import re
@@ -72,6 +72,8 @@ class RFLOW:
         cache_dic, current = cache_init(model_kwargs=model_args, num_steps=self.num_sampling_steps)
         flops_sum = 0
         cal_flops = False
+        if cal_flops:
+            from calflops import calculate_flops
         progress_wrap = tqdm if progress else (lambda x: x)
         for i, t in progress_wrap(enumerate(timesteps)):
             current['step'] = i
