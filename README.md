@@ -41,21 +41,21 @@ Besides, we provide a replica for our environment here
 
 ```bash
 cd DiT-ToCa
-conda env create -f environment-dit.yaml
+conda env create -f environment-dit.yml
 ```
 
 ##### PixArt-$\alpha $
 
 ```bash
 cd PixArt-alpha-ToCa
-conda env create -f environment-pixart.yaml
+conda env create -f environment-pixart.yml
 ```
 
 ##### OpenSora
 
 ```bash
 cd Open-Sora
-conda env create -f environment-opensora.yaml
+conda env create -f environment-opensora.yml
 pip install -v . # for development mode, `pip install -v -e .`
 ```
 
