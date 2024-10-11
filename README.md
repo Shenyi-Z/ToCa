@@ -29,7 +29,7 @@ Links:
 | Original  Models  |                     urls                     |
 | :---------------: | :------------------------------------------: |
 |        DiT        |   https://github.com/facebookresearch/DiT    |
-| PixArt-$ \alpha $ | https://github.com/PixArt-alpha/PixArt-alpha |
+|     PixArt-α      | https://github.com/PixArt-alpha/PixArt-alpha |
 |     OpenSora      |    https://github.com/hpcaitech/Open-Sora    |
 
 
@@ -44,7 +44,7 @@ cd DiT-ToCa
 conda env create -f environment-dit.yml
 ```
 
-##### PixArt-$\alpha $
+##### PixArt-α
 
 ```bash
 cd PixArt-alpha-ToCa
@@ -77,7 +77,7 @@ cd DiT-ToCa
 torchrun --nnodes=1 --nproc_per_node=6 sample_ddp.py --model DiT-XL/2 --per-proc-batch-size 150 --image-size 256 --cfg-scale 1.5 --num-sampling-steps 250 --cache-type attention --fresh-ratio 0.07 --ratio-scheduler ToCa --force-fresh global --fresh-threshold 4 --soft-fresh-weight 0.25 --num-fid-samples 50000
 ```
 
-### Run PixArt-$\alpha$-ToCa
+### Run PixArt-α-ToCa
 
 sample images for **visualization**
 
@@ -113,5 +113,5 @@ bash eval/vbench/launch.sh /root/autodl-tmp/pretrained_models/hpcai-tech/OpenSor
 
 ## Acknowledgements
 - Thanks to [DiT](https://github.com/facebookresearch/DiT) for their great work and codebase upon which we build DiT-ToCa.
-- Thanks to [PixArt-alpha](https://github.com/PixArt-alpha/PixArt-alpha) for their great work and codebase upon which we build PixArt-alpha-ToCa.
+- Thanks to [PixArt-α](https://github.com/PixArt-alpha/PixArt-alpha) for their great work and codebase upon which we build PixArt-α-ToCa.
 - Thanks to [OpenSora](https://github.com/hpcaitech/Open-Sora) for their great work and codebase upon which we build OpenSora-ToCa.
