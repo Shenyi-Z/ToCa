@@ -23,7 +23,7 @@ class Attention(nn.Module):
         self.num_heads = num_heads
         self.head_dim = dim // num_heads
         self.scale = self.head_dim ** -0.5
-        #self.fused_attn = use_fused_attn() #这个直接调到C++里面去了,不好取attn_map出来
+        #self.fused_attn = use_fused_attn()
         self.fused_attn = False
         self.qkv = nn.Linear(dim, dim * 3, bias=qkv_bias)
         self.q_norm = norm_layer(self.head_dim) if qk_norm else nn.Identity()
@@ -54,11 +54,8 @@ class Attention(nn.Module):
         B, N, C = x.shape
         
         if fresh_indices is not None:
-            # 这一支已经没有了。
-            #计算fresh tokens的个数
             #timetick0.record()
             N= fresh_indices.shape[1]
-            # 前面改变了tokens的顺序，需要在维度2重新排序改回来,以免attention map不匹配
             sorted_indices_tokens = fresh_indices.argsort(dim=-1, descending=False)
             x = torch.gather(input = x, dim = 1, index = sorted_indices_tokens.unsqueeze(-1).expand(-1, -1, x.shape[-1]) )  #(B, fresh_ratio*N, hidden_size)
             #timetick1.record()
@@ -96,7 +93,7 @@ class Attention(nn.Module):
             q = q * self.scale
             attn = q @ k.transpose(-2, -1)
             attn_map= attn.softmax(dim=-1) #extra cost for attn
-            attn = self.attn_drop(attn_map) #先用没drop的吧, attn_map: (B, num_heads, N-M, N)
+            attn = self.attn_drop(attn_map)
             x = attn @ v
         #timetick5.record()
         x = x.transpose(1, 2).reshape(B, N, C)
