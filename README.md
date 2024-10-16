@@ -6,6 +6,9 @@
 <a href="https://toca2024.github.io/ToCa/"><img src="https://img.shields.io/static/v1?label=Project%20Page&message=Github&color=blue&logo=github-pages"></a> &ensp;
 </div>
 
+## News
+2024.10.16: Users with autodl accounts can now quickly experience [OpenSora-ToCa](https://www.codewithgpu.com/i/Shenyi-Z/ToCa/OpenSora-ToCa) by directly using our publicly available image!
+
 ## Dependencies
 
 Python>=3.9
