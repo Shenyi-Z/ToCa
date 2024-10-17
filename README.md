@@ -132,3 +132,6 @@ bash eval/vbench/launch.sh /root/autodl-tmp/pretrained_models/hpcai-tech/OpenSor
   year={2024}
 }
 ```
+
+## :e-mail: Contact
+For any question about our paper or code, please contact [Chang Zou](mailto:shenyizou@outlook.com) and [Xuyang Liu](mailto:liuxuyang@stu.scu.edu.cn).
