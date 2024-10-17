@@ -1,20 +1,24 @@
+<div align=center>
+  
 # *ToCa*: Accelerating Diffusion Transformers with *To*ken-wise Feature *Ca*ching
 
-<div align="center">
-<a href="https://arxiv.org/abs/2410.05317"><img src="https://img.shields.io/static/v1?label=Paper&message=Arxiv:ToCa&color=red&logo=arxiv">
-</a> &ensp;
-<a href="https://toca2024.github.io/ToCa/"><img src="https://img.shields.io/static/v1?label=Project%20Page&message=Github&color=blue&logo=github-pages"></a> &ensp;
+<p>
+<a href='https://arxiv.org/abs/2410.05317'><img src='https://img.shields.io/badge/Paper-arXiv-red'></a>
+<a href='https://toca2024.github.io/ToCa/'><img src='https://img.shields.io/badge/Project-Page-blue'></a>
+</p>
+
 </div>
 
-## News
-2024.10.16: Users with autodl accounts can now quickly experience [OpenSora-ToCa](https://www.codewithgpu.com/i/Shenyi-Z/ToCa/OpenSora-ToCa) by directly using our publicly available image!
+## 🔥 News
+* `2024/10/16` 🤗🤗 Users with autodl accounts can now quickly experience [OpenSora-ToCa](https://www.codewithgpu.com/i/Shenyi-Z/ToCa/OpenSora-ToCa) by directly using our publicly available image!
+* `2024/10/12` 🚀🚀 We release our work [ToCa](https://arxiv.org/abs/2410.05317) about accelerating diffusion transformers for FREE, which achieves nearly lossless acceleration of **2.36×** on OpenSora!
 
-## Dependencies
+##  Dependencies
 
 Python>=3.9
 CUDA>=11.8
 
-## Installation
+## 🛠 Installation
 
 ``` cmd
 git clone https://github.com/Shenyi-Z/ToCa.git
@@ -62,7 +66,7 @@ conda env create -f environment-opensora.yml
 pip install -v . # for development mode, `pip install -v -e .`
 ```
 
-## Run and evaluation
+## 🚀 Run and evaluation
 
 ### Run DiT-ToCa
 
@@ -114,7 +118,17 @@ bash eval/vbench/launch.sh /root/autodl-tmp/pretrained_models/hpcai-tech/OpenSor
 
 ( remember replacing  "/root/autodl-tmp/pretrained_models/hpcai-tech/OpenSora-STDiT-v3/model.safetensors" with your own path!)
 
-## Acknowledgements
+## 👍 Acknowledgements
 - Thanks to [DiT](https://github.com/facebookresearch/DiT) for their great work and codebase upon which we build DiT-ToCa.
 - Thanks to [PixArt-α](https://github.com/PixArt-alpha/PixArt-alpha) for their great work and codebase upon which we build PixArt-α-ToCa.
 - Thanks to [OpenSora](https://github.com/hpcaitech/Open-Sora) for their great work and codebase upon which we build OpenSora-ToCa.
+
+## 📌 Citation
+```bibtex
+@article{zou2024accelerating,
+  title={Accelerating Diffusion Transformers with Token-wise Feature Caching},
+  author={Zou, Chang and Liu, Xuyang and Liu, Ting and Huang, Siteng and Zhang, Linfeng},
+  journal={arXiv preprint arXiv:2410.05317},
+  year={2024}
+}
+```
