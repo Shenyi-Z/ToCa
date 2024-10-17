@@ -134,4 +134,4 @@ bash eval/vbench/launch.sh /root/autodl-tmp/pretrained_models/hpcai-tech/OpenSor
 ```
 
 ## :e-mail: Contact
-For any question about our paper or code, please contact [Chang Zou](mailto:shenyizou@outlook.com) and [Xuyang Liu](mailto:liuxuyang@stu.scu.edu.cn).
+If you have any questions, please email `shenyizou@outlook.com`.
