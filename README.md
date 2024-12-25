@@ -16,9 +16,10 @@
 * `2024/10/12` 🚀🚀 We release our work [ToCa](https://arxiv.org/abs/2410.05317) about accelerating diffusion transformers for FREE, which achieves nearly lossless acceleration of **2.36×** on [OpenSora](https://github.com/hpcaitech/Open-Sora)!
 
 ##  Dependencies
-
+``` cmd
 Python>=3.9
 CUDA>=11.8
+```
 
 ## 🛠 Installation
 
