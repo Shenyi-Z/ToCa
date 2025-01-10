@@ -106,6 +106,8 @@ cd PixArt-alpha-ToCa
 torchrun --nproc_per_node=6 scripts/inference_ddp.py --model_path /root/autodl-tmp/pretrained_models/PixArt-XL-2-256x256.pth --image_size 256 --bs 100 --txt_file /root/autodl-tmp/COCO/COCO_caption_prompts_30k.txt --fresh_threshold 3 --fresh_ratio 0.30 --cache_type attention --force_fresh global --soft_fresh_weight 0.25 --ratio_scheduler ToCa
 ```
 
+（Besides, if you need our npz file: https://drive.google.com/file/d/1vUdoSgdIvtXo1cAS_aOFCJ1-XC_i1KEQ/view?usp=sharing)
+
 ### Run OpenSora-ToCa
 
 sample video for **visualizaiton**
