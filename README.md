@@ -1,6 +1,6 @@
 <div align=center>
   
-# *ToCa*: Accelerating Diffusion Transformers with *To*ken-wise Feature *Ca*ching
+# **[ICLR 2025]** *ToCa*: Accelerating Diffusion Transformers with *To*ken-wise Feature *Ca*ching
 
 <p>
 <a href='https://arxiv.org/abs/2410.05317'><img src='https://img.shields.io/badge/Paper-arXiv-red'></a>
@@ -11,6 +11,7 @@
 
 ## 🔥 News
 
+* `2025/01/22` 💥💥 ToCa is honored to be accepted by ICLR 2025!
 * `2024/12/29` 🚀🚀 We release our work [DuCa](https://arxiv.org/abs/2412.18911) about accelerating diffusion transformers for FREE, which achieves nearly lossless acceleration of **2.50×** on [OpenSora](https://github.com/hpcaitech/Open-Sora)! 🎉 **DuCa also overcomes the limitation of ToCa by fully supporting FlashAttention, enabling broader compatibility and efficiency improvements.**
 * `2024/12/24` 🤗🤗 We release an open-sourse repo "[Awesome-Token-Reduction-for-Model-Compression](https://github.com/xuyang-liu16/Awesome-Token-Reduction-for-Model-Compression)", which collects recent awesome token reduction papers! Feel free to contribute your suggestions!
 * `2024/12/20` 💥💥 Our ToCa has achieved nearly lossless acceleration of **1.51×** on [FLUX](https://huggingface.co/spaces/black-forest-labs/FLUX.1-schnell), feel free to check the latest version of our [paper](https://arxiv.org/pdf/2410.05317#page=19)!
