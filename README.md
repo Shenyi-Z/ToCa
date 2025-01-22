@@ -19,6 +19,13 @@
 * `2024/10/12` 🚀🚀 We release our work [ToCa](https://arxiv.org/abs/2410.05317) about accelerating diffusion transformers for FREE, which achieves nearly lossless acceleration of **2.36×** on [OpenSora](https://github.com/hpcaitech/Open-Sora)!
 * `2024/07/15` 🤗🤗 We release an open-sourse repo "[Awesome-Generation-Acceleration](https://github.com/xuyang-liu16/Awesome-Generation-Acceleration)", which collects recent awesome generation accleration papers! Feel free to contribute your suggestions!
 
+## TODO:
+
+- [ ] Support for FLOPs calculation
+- [ ] Add the FLUX version of ToCa
+- [ ] Further optimize the code logic to reduce the time consumption of tensor operations
+
+
 ##  Dependencies
 ``` cmd
 Python>=3.9
