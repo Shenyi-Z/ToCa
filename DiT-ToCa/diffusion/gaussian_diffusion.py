@@ -12,6 +12,7 @@ import enum
 
 from .diffusion_utils import discretized_gaussian_log_likelihood, normal_kl
 
+from cache_functions import cache_init
 
 def mean_flat(tensor):
     """
@@ -435,13 +436,6 @@ class GaussianDiffusion:
         model_kwargs=None,
         device=None,
         progress=False,
-        cache_type='',
-        fresh_ratio = 0.7,
-        fresh_threshold = 5,
-        force_fresh = 'global',
-        ratio_scheduler = 'constant',
-        soft_fresh_weight = 0.25,
-        #merge_weight = 0.0,
     ):
         """
         Generate samples from the model.
@@ -472,13 +466,6 @@ class GaussianDiffusion:
             model_kwargs=model_kwargs,
             device=device,
             progress=progress,
-            cache_type=cache_type,
-            fresh_ratio= fresh_ratio,
-            fresh_threshold = fresh_threshold,
-            force_fresh = force_fresh,
-            ratio_scheduler = ratio_scheduler,
-            soft_fresh_weight=soft_fresh_weight,
-            #merge_weight = merge_weight,
         ):
             final = sample
         return final["sample"]
@@ -494,13 +481,6 @@ class GaussianDiffusion:
         model_kwargs=None,
         device=None,
         progress=False,
-        cache_type='',
-        fresh_ratio = 0.7,
-        fresh_threshold = 5,
-        force_fresh = 'global',
-        ratio_scheduler = 'constant',
-        soft_fresh_weight = 0.25,
-        #merge_weight = 0.0,
     ):
         """
         Generate samples from the model and yield intermediate samples from
@@ -525,32 +505,7 @@ class GaussianDiffusion:
             indices = tqdm(indices)
 
         # Initialization for ToCa     
-        cache_dic = {}
-        cache = {}
-        cache_index = {}
-        cache[-1]={}
-        cache_index[-1]={}
-        cache_index['layer_index']={}
-        cache_dic['attn_map'] = {}
-        cache_dic['attn_map'][-1] = {}
-
-
-        for j in range(28):
-            cache[-1][j] = {}
-            cache_index[-1][j] = {}
-            cache_dic['attn_map'][-1][j] = {}
-
-        cache_dic['cache_type'] = cache_type
-        cache_dic['cache_index'] = cache_index
-        cache_dic['cache'] = cache
-        cache_dic['fresh_ratio_schedule'] = ratio_scheduler
-        cache_dic['fresh_ratio'] = fresh_ratio
-        cache_dic['fresh_threshold'] = fresh_threshold
-        cache_dic['force_fresh'] = force_fresh
-        cache_dic['soft_fresh_weight'] = soft_fresh_weight
-        #cache_dic['merge_weight'] = merge_weight
-        current = {}
-        current['num_steps'] = self.num_timesteps
+        cache_dic, current = cache_init(model_kwargs=model_kwargs, num_steps=self.num_timesteps)
 
         for i in indices:
             t = th.tensor([i] * shape[0], device=device)
@@ -569,12 +524,17 @@ class GaussianDiffusion:
                 )
                 yield out
                 img = out["sample"]
+        
+        if cache_dic['test_FLOPs'] == True:
+            print(cache_dic['flops'] * 1e-12, "TFLOPs")
 
     def ddim_sample(
         self,
         model,
         x,
         t,
+        current = None,
+        cache_dic = None,
         clip_denoised=True,
         denoised_fn=None,
         cond_fn=None,
@@ -589,6 +549,8 @@ class GaussianDiffusion:
             model,
             x,
             t,
+            current=current,
+            cache_dic=cache_dic,
             clip_denoised=clip_denoised,
             denoised_fn=denoised_fn,
             model_kwargs=model_kwargs,
@@ -723,13 +685,19 @@ class GaussianDiffusion:
 
             indices = tqdm(indices)
 
+        # Initialization for ToCa     
+        cache_dic, current = cache_init(model_kwargs=model_kwargs, num_steps=self.num_timesteps)
+
         for i in indices:
             t = th.tensor([i] * shape[0], device=device)
             with th.no_grad():
+                current['step'] = i
                 out = self.ddim_sample(
                     model,
                     img,
                     t,
+                    current=current,
+                    cache_dic=cache_dic,
                     clip_denoised=clip_denoised,
                     denoised_fn=denoised_fn,
                     cond_fn=cond_fn,
@@ -738,6 +706,8 @@ class GaussianDiffusion:
                 )
                 yield out
                 img = out["sample"]
+        if cache_dic['test_FLOPs'] == True:
+            print(cache_dic['flops'] * 1e-12, "TFLOPs")
 
     def _vb_terms_bpd(
             self, model, x_start, x_t, t, clip_denoised=True, model_kwargs=None

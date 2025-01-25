@@ -1,6 +1,6 @@
 import torch
 import torch.nn as nn
-from .scores import attn_score, similarity_score, norm_score
+from .scores import attn_score, similarity_score, norm_score, kv_norm_score
 def score_evaluate(cache_dic, tokens, current) -> torch.Tensor:
     '''
     Return the score tensor (B, N) for the given tokens. Mainly include s1, (s2,) s3 mentioned in the paper.
@@ -33,7 +33,9 @@ def score_evaluate(cache_dic, tokens, current) -> torch.Tensor:
 
         # if you'd like to add some randomness to the score as SiTo does to avoid tokens been over cached. This works, but we have another elegant way.
         #score = score + 0.0 * torch.rand_like(score, device= score.device)
-    
+    elif cache_dic['cache_type'] == 'kv-norm':
+        score = kv_norm_score(cache_dic, current)
+
     elif cache_dic['cache_type'] == 'similarity':
         # why don't we calculate similarity score? 
         # This is natural but we find it cost **TOO MUCH TIME**, cause in DiT series models, you can calculate similarity for scoring every where.
@@ -67,4 +69,8 @@ def score_evaluate(cache_dic, tokens, current) -> torch.Tensor:
         #soft_layer_score = cache_dic['cache_index']['layer_index'][current['module']].float() / (27)
         score = score + cache_dic['soft_fresh_weight'] * soft_step_score #+ 0.1 *soft_layer_score
     
+    #cfg_score, no_cfg_score = torch.split(score, len(score)//2, dim = 0)
+    #score = 0.5* cfg_score + 0.5* no_cfg_score
+    #score = torch.cat([score,score], dim=0)
+
     return score.to(tokens.device)

@@ -16,7 +16,7 @@ import math
 #from timm.models.vision_transformer import PatchEmbed, Attention, Mlp
 from timm.models.vision_transformer import PatchEmbed, Mlp
 #import os.path as osp
-from cache_functions import global_force_fresh, cache_cutfresh, update_cache, force_init, Attention
+from cache_functions import global_force_fresh, cache_cutfresh, update_cache, force_init, Attention, cal_type
 
 
 def modulate(x, shift, scale):
@@ -120,49 +120,111 @@ class DiTBlock(nn.Module):
         )
 
     def forward(self, x, c, current, cache_dic):
-  
-        '''
-        cache_dic = {'fresh_ratio': fresh_ratio, 'cache_type': 'random', 'cache_index': cache_index, 'cache':cache, 'attn_map': attn_map}
-        current = {'step': step, 'num_steps': numstep, 'layer': layer, 'module': module}
-        '''
+        B, N, C = x.shape
 
-        shift_msa, scale_msa, gate_msa, shift_mlp, scale_mlp, gate_mlp = self.adaLN_modulation(c).chunk(6, dim=1)
-        cache_type = cache_dic['cache_type']
         layer = current['layer']
+
+        # FLOPs calculation initialization
+        flops = 0
+        test_FLOPs = cache_dic.get('test_FLOPs', False)  # check if test_FLOPs is enabled
         
-        # force fresh strategy
-        force_fresh = global_force_fresh(cache_dic, current)
-        current['is_force_fresh'] = force_fresh
+        # determine current working status
+        cal_type(cache_dic, current)
 
-        if force_fresh: # Force Activation: Compute all tokens and save them in cache
+        if current['type'] == 'full':  # Force Activation: Compute all tokens and save them in cache
+
+            # AdaLN Modulation
+            shift_msa, scale_msa, gate_msa, shift_mlp, scale_mlp, gate_mlp = self.adaLN_modulation(c).chunk(6, dim=1)
+
+            # LayerNorm FLOPs (for both norm1 and norm2)
+            if test_FLOPs:
+                flops += 2 * B * N * C
+
+            # AdaLN FLOPs (SiLU and Linear)
+            if test_FLOPs:
+                flops += B * C  # SiLU FLOPs
+                flops += B * C * 6 * C  # Linear FLOPs in adaLN_modulation
+
             current['module'] = 'attn'
-            cache_dic['cache'][-1][layer]['attn'], cache_dic['attn_map'][-1][layer] = self.attn(modulate(self.norm1(x), shift_msa, scale_msa), cache_dic = cache_dic, current = current)
+            attn_output, attn_map = self.attn(modulate(self.norm1(x), shift_msa, scale_msa), cache_dic=cache_dic, current=current)
+            cache_dic['cache'][-1][layer]['attn'] = attn_output
+            cache_dic['attn_map'][-1][layer] = attn_map
             force_init(cache_dic, current, x)
-            x = x + gate_msa.unsqueeze(1) * cache_dic['cache'][-1][layer]['attn']
-            
+            x = x + gate_msa.unsqueeze(1) * attn_output
+
             current['module'] = 'mlp'
-            cache_dic['cache'][-1][layer]['mlp'] = self.mlp(modulate(self.norm2(x), shift_mlp, scale_mlp))
+            mlp_output = self.mlp(modulate(self.norm2(x), shift_mlp, scale_mlp))
+            cache_dic['cache'][-1][layer]['mlp'] = mlp_output
             force_init(cache_dic, current, x)
-            x = x + gate_mlp.unsqueeze(1) * cache_dic['cache'][-1][layer]['mlp']
+            x = x + gate_mlp.unsqueeze(1) * mlp_output
 
+            # MLP FLOPs
+            if test_FLOPs:
+                mlp_hidden_dim = int(C * 4)  # Assuming mlp_ratio = 4
+                flops += B * N * C * mlp_hidden_dim * 2 # First projection
+                flops += B * N * mlp_hidden_dim * C * 2# Second projection
+                flops += B * N * mlp_hidden_dim * 6 # GELU activation
 
-        else: # Partial Computation: Compute only fresh tokens and save them in cache, no attention token computation in the final version
+        elif current['type'] == 'ToCa':  # Partial Computation: Compute only fresh tokens and save them in cache, no attention token computation in the final version
+            
+            # AdaLN Modulation
+            shift_msa, scale_msa, gate_msa, shift_mlp, scale_mlp, gate_mlp = self.adaLN_modulation(c).chunk(6, dim=1)
+            
+            # LayerNorm FLOPs (for both norm1 and norm2)
+            if test_FLOPs:
+                flops += 2 * B * N * C
 
-            current['module'] = 'attn' 
-            # no extra computation for final version, you can add the following line to do some partial computation, but always worse results caused by error propagation mentioned in the paper.
-            #fresh_indices, fresh_tokens = cache_cutfresh(cache_dic, x, current)
-            #fresh_tokens, fresh_attn_map = self.attn(modulate(self.norm1(fresh_tokens), shift_msa, scale_msa), cache_dic = cache_dic, current = current, fresh_indices = fresh_indices)
-            #update_cache(fresh_indices, fresh_tokens=fresh_tokens, cache_dic=cache_dic, current=current, fresh_attn_map=fresh_attn_map)
+            # AdaLN FLOPs (SiLU and Linear)
+            if test_FLOPs:
+                flops += B * C  # SiLU FLOPs
+                flops += B * C * 6 * C  # Linear FLOPs in adaLN_modulation
+
+            current['module'] = 'attn'
             x = x + gate_msa.unsqueeze(1) * cache_dic['cache'][-1][layer]['attn']
 
             current['module'] = 'mlp'
             fresh_indices, fresh_tokens = cache_cutfresh(cache_dic, x, current)
             fresh_tokens = self.mlp(modulate(self.norm2(fresh_tokens), shift_mlp, scale_mlp))
             update_cache(fresh_indices, fresh_tokens=fresh_tokens, cache_dic=cache_dic, current=current)
+            
             x = x + gate_mlp.unsqueeze(1) * cache_dic['cache'][-1][layer]['mlp']
+            
+
+            # MLP FLOPs for the 'else' branch
+            if test_FLOPs:
+                B_fresh, N_fresh, C_fresh = fresh_tokens.shape
+                mlp_hidden_dim = int(C_fresh * 4)  # Assuming mlp_ratio = 4
+                flops += B_fresh * N_fresh * C_fresh * mlp_hidden_dim * 2 # First projection
+                flops += B_fresh * N_fresh * mlp_hidden_dim * C_fresh * 2 # Second projection
+                flops += B_fresh * N_fresh * mlp_hidden_dim * 6 # GELU activation
+
+        elif current['type'] == 'FORA':
+            
+            # AdaLN Modulation
+            shift_msa, scale_msa, gate_msa, shift_mlp, scale_mlp, gate_mlp = self.adaLN_modulation(c).chunk(6, dim=1)
+            
+            # AdaLN FLOPs (SiLU and Linear)
+            if test_FLOPs:
+                flops += B * C  # SiLU FLOPs
+                flops += B * C * 6 * C  # Linear FLOPs in adaLN_modulation
+
+            current['module'] = 'attn'
+            x = x + gate_msa.unsqueeze(1) * cache_dic['cache'][-1][layer]['attn']
+
+            current['module'] = 'mlp'
+            x = x + gate_mlp.unsqueeze(1) * cache_dic['cache'][-1][layer]['mlp']
+        
+        else:
+            current['module'] = 'skipped'
+            if current['layer'] == 27:
+                x = cache_dic['cache'][-1]['noise']
+
+        cache_dic['flops'] += flops
+
+        if current['layer'] == 27:
+            cache_dic['cache'][-1]['noise'] = x
 
         return x
-
 
 
 class FinalLayer(nn.Module):
@@ -273,23 +335,6 @@ class DiT(nn.Module):
         imgs = x.reshape(shape=(x.shape[0], c, h * p, h * p))
         return imgs
 
-    #def forward(self, x, t, y):
-    #    """
-    #    Forward pass of DiT.
-    #    x: (N, C, H, W) tensor of spatial inputs (images or latent representations of images)
-    #    t: (N,) tensor of diffusion timesteps
-    #    y: (N,) tensor of class labels
-    #    """
-    #    x = self.x_embedder(x) + self.pos_embed  # (N, T, D), where T = H * W / patch_size ** 2
-    #    t = self.t_embedder(t)                   # (N, D)
-    #    y = self.y_embedder(y, self.training)    # (N, D)
-    #    c = t + y                                # (N, D)
-    #    for block in self.blocks:
-    #        x = block(x, c)                      # (N, T, D)
-    #    x = self.final_layer(x, c)                # (N, T, patch_size ** 2 * out_channels)
-    #    x = self.unpatchify(x)                   # (N, out_channels, H, W)
-    #    return x
-    
     def forward(self, x, t, current, cache_dic, y): 
         """
         Forward pass of DiT.
@@ -302,6 +347,7 @@ class DiT(nn.Module):
         t = self.t_embedder(t)                   # (N, D)
         y = self.y_embedder(y, self.training)    # (N, D)
         c = t + y                                # (N, D)
+
         for layeridx, block in enumerate(self.blocks):
             current['layer'] = layeridx
             x = block(x, c, current, cache_dic)                      # (N, T, D)
@@ -311,7 +357,7 @@ class DiT(nn.Module):
         return x
 
     
-    def forward_with_cfg(self, x, t, current, cache_dic, y, cfg_scale):
+    def forward_with_cfg(self, x, t, current, cache_dic, y, cfg_scale, **kwargs):
     #def forward_with_cfg(self, x, t, y, cfg_scale):
         """
         Forward pass of DiT, but also batches the unconditional forward pass for classifier-free guidance.

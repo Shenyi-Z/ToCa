@@ -3,6 +3,7 @@ def global_force_fresh(cache_dic, current):
     '''
     Return whether to force fresh tokens globally.
     '''
+    last_steps = (current['step'] <= 2)
     first_step = (current['step'] == (current['num_steps'] - 1))
     force_fresh = cache_dic['force_fresh']
     if not first_step:

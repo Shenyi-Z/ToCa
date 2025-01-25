@@ -71,22 +71,21 @@ def main(args):
         num_classes=args.num_classes
     ).to(device)
     # Auto-download a pre-trained model or load a custom DiT checkpoint from train.py:
-    ckpt_path = args.ckpt or f"../autodl-tmp/pretrained_models/DiT-XL-2-{args.image_size}x{args.image_size}.pt"
+    ckpt_path = args.ckpt or f"/root/autodl-tmp/pretrained_models/DiT/DiT-XL-2-{args.image_size}x{args.image_size}.pt"
     state_dict = find_model(ckpt_path)
     model.load_state_dict(state_dict)
     model.eval()  # important!
     diffusion = create_diffusion(str(args.num_sampling_steps))
-    #vae = AutoencoderKL.from_pretrained(f"stabilityai/sd-vae-ft-{args.vae}").to(device)
-    vae = AutoencoderKL.from_pretrained(f"../autodl-tmp/pretrained_models").to(device)
+    vae = AutoencoderKL.from_pretrained(f"/root/autodl-tmp/pretrained_models/stabilityai/sd-vae-ft-{args.vae}").to(device)
+    #vae = AutoencoderKL.from_pretrained(f"/root/autodl-tmp/pretrained_models").to(device)
     assert args.cfg_scale >= 1.0, "In almost all cases, cfg_scale be >= 1.0"
     using_cfg = args.cfg_scale > 1.0
-    #print("cfg scale = ", args.cfg_scale, flush=True)
 
     # Create folder to save samples:
     model_string_name = args.model.replace("/", "-")
     ckpt_string_name = os.path.basename(args.ckpt).replace(".pt", "") if args.ckpt else "pretrained"
-    folder_name = f"{model_string_name}-{ckpt_string_name}-size-{args.image_size}-vae-{args.vae}-" \
-                  f"cfg-{args.cfg_scale}-seed-{args.global_seed}"\
+    folder_name = f"ToCa-{model_string_name}-{ckpt_string_name}-size-{args.image_size}-vae-{args.vae}-" \
+                  f"cfg-{args.cfg_scale}-seed-{args.global_seed}-step-{args.num_sampling_steps}-num-{args.num_fid_samples}"\
                   f"-{args.cache_type}-{args.fresh_ratio}-{args.ratio_scheduler}-{args.force_fresh}-{args.fresh_threshold}"\
                   f"-softweight-{args.soft_fresh_weight}"
     sample_folder_dir = f"{args.sample_dir}/{folder_name}"
@@ -126,17 +125,25 @@ def main(args):
             model_kwargs = dict(y=y)
             sample_fn = model.forward
 
+        model_kwargs['cache_type']        = args.cache_type
+        model_kwargs['fresh_ratio']       = args.fresh_ratio
+        model_kwargs['force_fresh']       = args.force_fresh
+        model_kwargs['fresh_threshold']   = args.fresh_threshold
+        model_kwargs['ratio_scheduler']   = args.ratio_scheduler
+        model_kwargs['soft_fresh_weight'] = args.soft_fresh_weight
+        model_kwargs['test_FLOPs']        = args.test_FLOPs
+        
+
         # Sample images:
-        samples = diffusion.p_sample_loop(
-            sample_fn, z.shape, z, clip_denoised=False, model_kwargs=model_kwargs, progress=False, device=device,
-            cache_type= args.cache_type,
-            fresh_ratio=args.fresh_ratio,
-            force_fresh=args.force_fresh,
-            fresh_threshold=args.fresh_threshold,
-            ratio_scheduler=args.ratio_scheduler,
-            soft_fresh_weight=args.soft_fresh_weight,
-            #merge_weight=args.merge_weight
-        )
+        if args.ddim_sample:
+            samples = diffusion.ddim_sample_loop(
+                sample_fn, z.shape, z, clip_denoised=False, model_kwargs=model_kwargs, progress=False, device=device
+            )
+        else:
+            samples = diffusion.p_sample_loop(
+                sample_fn, z.shape, z, clip_denoised=False, model_kwargs=model_kwargs, progress=False, device=device,
+            )
+            
         if using_cfg:
             samples, _ = samples.chunk(2, dim=0)  # Remove null class samples
 
@@ -162,7 +169,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--model", type=str, choices=list(DiT_models.keys()), default="DiT-XL/2")
     parser.add_argument("--vae",  type=str, choices=["ema", "mse"], default="ema")
-    parser.add_argument("--sample-dir", type=str, default="../autodl-tmp/samples") # Change this to your desired sample directory
+    parser.add_argument("--sample-dir", type=str, default="/root/autodl-tmp/samples") # Change this to your desired sample directory
     parser.add_argument("--per-proc-batch-size", type=int, default=32)
     parser.add_argument("--num-fid-samples", type=int, default=50_000)
     parser.add_argument("--image-size", type=int, choices=[256, 512], default=256)
@@ -174,14 +181,16 @@ if __name__ == "__main__":
                         help="By default, use TF32 matmuls. This massively accelerates sampling on Ampere GPUs.")
     parser.add_argument("--ckpt", type=str, default=None,
                         help="Optional path to a DiT checkpoint (default: auto-download a pre-trained DiT-XL/2 model).")
+    parser.add_argument("--ddim-sample", action="store_true", default=False)
     parser.add_argument("--fresh-ratio", type=float, default=0.07)
-    parser.add_argument("--cache-type", type=str, choices=['random', 'attention','similarity','norm', 'compress'], default='random') # only attention supported currently
-    parser.add_argument("--ratio-scheduler", type=str, default='ToCa', choices=['linear', 'cosine', 'exp', 'constant','linear-mode','layerwise','ToCa']) #  'ToCa' is the proposed scheduler in Final version of the paper
+    parser.add_argument("--cache-type", type=str, choices=['random', 'attention','similarity','norm', 'compress','kv-norm'], default='random') # only attention supported currently
+    parser.add_argument("--ratio-scheduler", type=str, default='ToCa', choices=['linear', 'cosine', 'exp', 'constant','linear-mode','layerwise','ToCa-ddpm250', 'ToCa-ddim50']) #  'ToCa' is the proposed scheduler in Final version of the paper
     parser.add_argument("--force-fresh", type=str, choices=['global', 'local'], default='global', # only global is supported currently, local causes bad results
                         help="Force fresh strategy. global: fresh all tokens. local: fresh tokens acheiving fresh step threshold.")
     parser.add_argument("--fresh-threshold", type=int, default=4) # N in the paper
     parser.add_argument("--soft-fresh-weight", type=float, default=0.25, # lambda_3 in the paper
                         help="soft weight for updating the stale tokens by adding extra scores.")
+    parser.add_argument("--test-FLOPs", action="store_true", default=False)
     #parser.add_argument("--merge-weight", type=float, default=0.0) # never used in the paper, just for exploration
 
     args = parser.parse_args()

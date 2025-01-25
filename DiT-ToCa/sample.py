@@ -39,17 +39,17 @@ def main(args):
         num_classes=args.num_classes
     ).to(device)
     # Auto-download a pre-trained model or load a custom DiT checkpoint from train.py:
-    ckpt_path = args.ckpt or f"DiT-XL-2-{args.image_size}x{args.image_size}.pt"
+    ckpt_path = args.ckpt or f"/root/autodl-tmp/pretrained_models/DiT/DiT-XL-2-{args.image_size}x{args.image_size}.pt"
     state_dict = find_model(ckpt_path)
     model.load_state_dict(state_dict)
     model.eval()  # important!
     diffusion = create_diffusion(str(args.num_sampling_steps))
-    vae = AutoencoderKL.from_pretrained(f"stabilityai/sd-vae-ft-{args.vae}").to(device)
+    vae = AutoencoderKL.from_pretrained(f"/root/autodl-tmp/pretrained_models/stabilityai/sd-vae-ft-{args.vae}").to(device)
+    #vae = AutoencoderKL.from_pretrained(f"/root/autodl-tmp/pretrained_models").to(device)
 
     # Labels to condition the model with (feel free to change):
-    #class_labels = [207, 360, 387, 974, 88, 979, 417, 279,]
-    # change ID number 15 to any other ImageNet category ID
-    class_labels = [15] #Americal robin
+    class_labels = [985]
+
 
     # Create sampling noise:
     n = len(class_labels)
@@ -64,20 +64,27 @@ def main(args):
     y = torch.cat([y, y_null], 0)
     model_kwargs = dict(y=y, cfg_scale=args.cfg_scale)
 
+    model_kwargs['cache_type']        = args.cache_type
+    model_kwargs['fresh_ratio']       = args.fresh_ratio
+    model_kwargs['force_fresh']       = args.force_fresh
+    model_kwargs['fresh_threshold']   = args.fresh_threshold
+    model_kwargs['ratio_scheduler']   = args.ratio_scheduler
+    model_kwargs['soft_fresh_weight'] = args.soft_fresh_weight
+    model_kwargs['test_FLOPs']        = args.test_FLOPs
+        
+
     start = torch.cuda.Event(enable_timing=True)
     end = torch.cuda.Event(enable_timing=True)
     start.record()
 
-    samples = diffusion.p_sample_loop(
-        model.forward_with_cfg, z.shape, z, clip_denoised=False, model_kwargs=model_kwargs, progress=True, device=device,
-        cache_type=args.cache_type,
-        fresh_ratio=args.fresh_ratio,
-        force_fresh=args.force_fresh,
-        fresh_threshold=args.fresh_threshold,
-        ratio_scheduler=args.ratio_scheduler,
-        soft_fresh_weight=args.soft_fresh_weight,
-        #merge_weight = args.merge_weight
-    )
+    if args.ddim_sample:
+        samples = diffusion.ddim_sample_loop(
+            model.forward_with_cfg, z.shape, z, clip_denoised=False, model_kwargs=model_kwargs, progress=True, device=device
+        )
+    else:
+        samples = diffusion.p_sample_loop(
+            model.forward_with_cfg, z.shape, z, clip_denoised=False, model_kwargs=model_kwargs, progress=True, device=device
+        )
     end.record()
     torch.cuda.synchronize()
     print(f"Total Sampling took {start.elapsed_time(end)*0.001} seconds")
@@ -100,14 +107,16 @@ if __name__ == "__main__":
     parser.add_argument("--seed", type=int, default=0)
     parser.add_argument("--ckpt", type=str, default=None,
                         help="Optional path to a DiT checkpoint (default: auto-download a pre-trained DiT-XL/2 model).")
-    parser.add_argument("--cache-type", type=str, choices=['random', 'attention','similarity','norm', 'compress'], default='attention') # only attention is supported currently
+    parser.add_argument("--ddim-sample", action="store_true", default=False)
+    parser.add_argument("--cache-type", type=str, choices=['random', 'attention','similarity','norm', 'compress','kv-norm'], default='attention') # only attention is supported currently
     parser.add_argument("--fresh-ratio", type=float, default=0.07)
-    parser.add_argument("--ratio-scheduler", type=str, default='ToCa', choices=['linear', 'cosine', 'exp', 'constant','linear-mode','layerwise','ToCa']) #  'ToCa' is the proposed scheduler in Final version of the paper
+    parser.add_argument("--ratio-scheduler", type=str, default='ToCa', choices=['linear', 'cosine', 'exp', 'constant','linear-mode','layerwise','ToCa-ddpm250', 'ToCa-ddim50']) #  'ToCa' is the proposed scheduler in Final version of the paper
     parser.add_argument("--force-fresh", type=str, choices=['global', 'local'], default='global',
                         help="Force fresh strategy. global: fresh all tokens. local: fresh tokens acheiving fresh step threshold.") # only global is supported currently, local causes bad results
     parser.add_argument("--fresh-threshold", type=int, default=4) # N in the paper
     parser.add_argument("--soft-fresh-weight", type=float, default=0.25, # lambda_3 in the paper
                         help="soft weight for updating the stale tokens by adding extra scores.")
+    parser.add_argument("--test-FLOPs", action="store_true", default=False)
     #parser.add_argument("--merge-weight", type=float, default=0.0) # never used in the paper, just for exploration
 
     args = parser.parse_args()

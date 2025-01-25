@@ -35,15 +35,17 @@ def fresh_ratio_scheduler(cache_dic, current):
         
         return fresh_ratio * layer_factor * step_factor * module_factor
     
-    elif fresh_ratio_schedule == 'ToCa':
-        # Proposed scheduling method in the paper.
+###### Recommended Configurations ######
+
+    elif fresh_ratio_schedule == 'ToCa-ddim50':
+        # Proposed scheduling method in toca.
 
         # step wise scheduling, we find there is little differece if change the weight of step factor, so this is not a key factor. 
-        step_weight = 0.4 
+        step_weight = 2.0 #0.4 #0.0 # 2.0
         step_factor = 1 + step_weight - 2 * step_weight * step / num_steps
 
         # layer wise scheduling, important. Meaning caculate more in the front layers, less in the back layers.
-        layer_weight = 0.8
+        layer_weight = -0.2#0.8 #0.0 # -0.2
         layer_factor = 1 + layer_weight - 2 * layer_weight * current['layer'] / 27
 
         # Module wise scheduling, important. Meaning caculate more in the mlp module, less in the attn module.
@@ -51,6 +53,23 @@ def fresh_ratio_scheduler(cache_dic, current):
         module_time_weight = 0.6 # estimated from the time and flops of mlp and attn module, may change in different situations.
         module_factor = (1 - (1-module_time_weight) * module_weight) if current['module']=='attn' else (1 + module_time_weight * module_weight)
         
+        return fresh_ratio * layer_factor * step_factor * module_factor
+    
+    elif fresh_ratio_schedule == 'ToCa-ddpm250':
+        # Proposed scheduling method in toca.
+
+        # step wise scheduling, we find there is little differece if change the weight of step factor, so this is not a key factor. 
+        step_weight = 0.4 #0.0 # 2.0
+        step_factor = 1 + step_weight - 2 * step_weight * step / num_steps
+
+        # layer wise scheduling, important. Meaning caculate more in the front layers, less in the back layers.
+        layer_weight = 0.8 #0.0 # -0.2
+        layer_factor = 1 + layer_weight - 2 * layer_weight * current['layer'] / 27
+
+        # Module wise scheduling, important. Meaning caculate more in the mlp module, less in the attn module.
+        module_weight = 2.5 # no calculations for attn module (2.5 * 0.4 = 1.0), compuation is transformed to mlp module.
+        module_time_weight = 0.6 # estimated from the time and flops of mlp and attn module, may change in different situations.
+        module_factor = (1 - (1-module_time_weight) * module_weight) if current['module']=='attn' else (1 + module_time_weight * module_weight)
         return fresh_ratio * layer_factor * step_factor * module_factor
 
     else:

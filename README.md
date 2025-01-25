@@ -21,7 +21,7 @@
 
 ## TODO:
 
-- [ ] Support for FLOPs calculation
+- [x] Support for FLOPs calculation
 - [ ] Add the FLUX version of ToCa
 - [ ] Further optimize the code logic to reduce the time consumption of tensor operations
 
@@ -84,18 +84,45 @@ pip install -v . # for development mode, `pip install -v -e .`
 
 ### Run DiT-ToCa
 
+#### DDPM-250 Steps
+
 sample images for **visualization**
 
 ```bash
 cd DiT-ToCa
-python sample.py --image-size 256 --num-sampling-steps 250 --cache-type attention --fresh-threshold 4 --fresh-ratio 0.07 --ratio-scheduler ToCa  --force-fresh global --soft-fresh-weight 0.25
+python sample.py --image-size 256 --num-sampling-steps 250 --cache-type attention --fresh-threshold 4 --fresh-ratio 0.07 --ratio-scheduler ToCa-ddpm250  --force-fresh global --soft-fresh-weight 0.25
 ```
 
 sample images for **evaluation** (e.g 50k)
 
 ```bash
 cd DiT-ToCa
-torchrun --nnodes=1 --nproc_per_node=6 sample_ddp.py --model DiT-XL/2 --per-proc-batch-size 150 --image-size 256 --cfg-scale 1.5 --num-sampling-steps 250 --cache-type attention --fresh-ratio 0.07 --ratio-scheduler ToCa --force-fresh global --fresh-threshold 4 --soft-fresh-weight 0.25 --num-fid-samples 50000
+torchrun --nnodes=1 --nproc_per_node=6 sample_ddp.py --model DiT-XL/2 --per-proc-batch-size 150 --image-size 256 --cfg-scale 1.5 --num-sampling-steps 250 --cache-type attention --fresh-ratio 0.07 --ratio-scheduler ToCa-ddpm250 --force-fresh global --fresh-threshold 4 --soft-fresh-weight 0.25 --num-fid-samples 50000
+```
+
+#### DDIM-50 Steps
+
+sample images for **visualization**
+
+```bash
+cd DiT-ToCa
+python sample.py --image-size 256 --num-sampling-steps 50 --cache-type attention --fresh-threshold 3 --fresh-ratio 0.07 --ratio-scheduler ToCa-ddpm250  --force-fresh global --soft-fresh-weight 0.25 --ddim-sample
+```
+
+sample images for **evaluation** (e.g 50k)
+
+```bash
+cd DiT-ToCa
+torchrun --nnodes=1 --nproc_per_node=6 sample_ddp.py --model DiT-XL/2 --per-proc-batch-size 150 --image-size 256 --cfg-scale 1.5 --num-sampling-steps 50 --cache-type attention --fresh-ratio 0.07 --ratio-scheduler ToCa-ddpm250 --force-fresh global --fresh-threshold 3 --soft-fresh-weight 0.25 --num-fid-samples 50000 --ddim-sample
+```
+
+#### test FLOPs
+
+Just add --test-FLOPs, here an example: 
+
+```bash
+cd DiT-ToCa
+python sample.py --image-size 256 --num-sampling-steps 50 --cache-type attention --fresh-threshold 3 --fresh-ratio 0.07 --ratio-scheduler ToCa-ddim50  --force-fresh global --soft-fresh-weight 0.25 --ddim-sample --test-FLOPs
 ```
 
 ### Run PixArt-α-ToCa

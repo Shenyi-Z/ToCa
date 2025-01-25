@@ -15,9 +15,11 @@ def cache_cutfresh(cache_dic, tokens, current):
     module = current['module']
     
     fresh_ratio = fresh_ratio_scheduler(cache_dic, current)
+    fresh_ratio = torch.clamp(torch.tensor(fresh_ratio), 0.0, 1.0)
     # Generate the index tensor for fresh tokens
     score = score_evaluate(cache_dic, tokens, current)
     score = local_selection_with_bonus(score, 0.6, 2) # Uniform Spatial Distribution s4 mentioned in the paper
+    # 0.6, 2
     indices = score.argsort(dim=-1, descending=True)
     topk = int(fresh_ratio * score.shape[1])
     fresh_indices = indices[:, :topk]
@@ -30,10 +32,10 @@ def cache_cutfresh(cache_dic, tokens, current):
     cache_dic['cache_index'][-1][layer][module].scatter_(dim=1, index=fresh_indices, 
                                                                     src = torch.zeros_like(fresh_indices, dtype=torch.int, device=fresh_indices.device))
     
-    # not used in the final version
-    cache_dic['cache_index']['layer_index'][module] += 1
-    cache_dic['cache_index']['layer_index'][module].scatter_(dim=1, index=fresh_indices, 
-                                                                    src = torch.zeros_like(fresh_indices, dtype=torch.int, device=fresh_indices.device))
+    ## not used in the final version
+    #cache_dic['cache_index']['layer_index'][module] += 1
+    #cache_dic['cache_index']['layer_index'][module].scatter_(dim=1, index=fresh_indices, 
+    #                                                                src = torch.zeros_like(fresh_indices, dtype=torch.int, device=fresh_indices.device))
     # select the fresh tokens out
     fresh_indices_expand = fresh_indices.unsqueeze(-1).expand(-1, -1, tokens.shape[-1])
 

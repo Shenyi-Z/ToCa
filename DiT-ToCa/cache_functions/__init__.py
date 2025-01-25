@@ -6,3 +6,5 @@ from .cache_cutfresh import cache_cutfresh
 from .update_cache import update_cache
 from .force_init import force_init
 from .attention import Attention
+from .cache_init import cache_init
+from .cal_type import cal_type
