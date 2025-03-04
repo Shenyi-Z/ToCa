@@ -11,6 +11,7 @@ from transformers import pipeline
 
 from flux.cli import SamplingOptions
 from flux.sampling import denoise, get_noise, get_schedule, prepare, unpack
+from flux.ideas import denoise_cache
 from flux.util import configs, embed_watermark, load_ae, load_clip, load_flow_model, load_t5
 
 NSFW_THRESHOLD = 0.85
@@ -113,7 +114,7 @@ class FluxGenerator:
             self.model = self.model.to(self.device)
 
         # denoise initial noise
-        x = denoise(self.model, **inp, timesteps=timesteps, guidance=opts.guidance)
+        x = denoise_cache(self.model, **inp, timesteps=timesteps, guidance=opts.guidance)
 
         # offload model, load autoencoder to gpu
         if self.offload:

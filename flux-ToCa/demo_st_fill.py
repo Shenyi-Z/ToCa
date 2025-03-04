@@ -15,6 +15,7 @@ from streamlit_drawable_canvas import st_canvas
 from transformers import pipeline
 
 from flux.sampling import denoise, get_noise, get_schedule, prepare_fill, unpack
+from flux.ideas import denoise_cache
 from flux.util import embed_watermark, load_ae, load_clip, load_flow_model, load_t5
 
 NSFW_THRESHOLD = 0.85
@@ -395,7 +396,7 @@ def main(
                     torch.cuda.empty_cache()
                     model = model.to(torch_device)
 
-                x = denoise(model, **inp, timesteps=timesteps, guidance=guidance)
+                x = denoise_cache(model, **inp, timesteps=timesteps, guidance=guidance)
 
                 if offload:
                     model.cpu()

@@ -10,6 +10,7 @@ from transformers import pipeline
 
 from flux.modules.image_embedders import CannyImageEncoder, DepthImageEncoder
 from flux.sampling import denoise, get_noise, get_schedule, prepare_control, unpack
+from flux.ideas import denoise_cache
 from flux.util import configs, load_ae, load_clip, load_flow_model, load_t5, save_image
 
 
@@ -304,7 +305,7 @@ def main(
             model = model.to(torch_device)
 
         # denoise initial noise
-        x = denoise(model, **inp, timesteps=timesteps, guidance=opts.guidance)
+        x = denoise_cache(model, **inp, timesteps=timesteps, guidance=opts.guidance)
 
         # offload model, load autoencoder to gpu
         if offload:
