@@ -1,6 +1,5 @@
 import torch
 from ..model import Flux
-from .split_utils import split, merge
 from torch import Tensor
 from ..modules.cache_functions import cache_init
 
