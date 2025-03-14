@@ -151,7 +151,7 @@ torchrun --nproc_per_node=6 scripts/inference_ddp.py --model_path /root/autodl-t
 
 ### Run OpenSora-ToCa
 
-sample video for **visualizaiton**
+sample video for **visualization**
 
 ```bash
 cd Open-Sora
